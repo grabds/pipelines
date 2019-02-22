@@ -17,27 +17,35 @@ import * as express from 'express';
 import { Application, static as StaticHandler } from 'express';
 import * as fs from 'fs';
 import * as proxy from 'http-proxy-middleware';
-import { Client as MinioClient } from 'minio';
 import fetch from 'node-fetch';
 import * as path from 'path';
 import * as process from 'process';
+import { Stream } from 'stream';
 // @ts-ignore
 import * as tar from 'tar';
+import { confFromEnv, getMinioClientProxy } from './iam-role-proxy';
 import * as k8sHelper from './k8s-helper';
 import proxyMiddleware from './proxy-middleware';
-import { Stream } from 'stream';
 
 const BASEPATH = '/pipeline';
 
 // The minio endpoint, port, access and secret keys are hardcoded to the same
 // values used in the deployment.
-const minioClient = new MinioClient({
-  accessKey: 'minio',
-  endPoint: 'minio-service.kubeflow',
-  port: 9000,
-  secretKey: 'minio123',
-  useSSL: false,
-} as any);
+// const minioClient = new MinioClient({
+//   accessKey: 'minio',
+//   endPoint: 'minio-service.kubeflow',
+//   port: 9000,
+//   secretKey: 'minio123',
+//   useSSL: false,
+// } as any);
+
+/**
+ * Replace minio client with a proxy object (values are returned as promises, 
+ * functions are decorated and returns a promise to the result of the minio-client), 
+ * in order to support ec2 iam role credentials when accessKey and secretKey are
+ * not provided for s3 endpoints.
+ */
+const minioClient = getMinioClientProxy(confFromEnv());
 
 const app = express() as Application;
 

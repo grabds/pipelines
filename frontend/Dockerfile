@@ -40,4 +40,13 @@ EXPOSE 3000
 RUN npm install
 RUN npm run build
 ENV API_SERVER_ADDRESS http://localhost:3001
+
+# minio conf
+ENV MINIO_END_POINT=minio-service.kubeflow
+ENV MINIO_PORT=9000
+ENV MINIO_ACCESS_KEY=minio
+ENV MINIO_SECRET_KEY=minio123
+ENV MINIO_SECURE=false
+ENV MINIO_REGION=
+
 CMD node dist/server.js ../client/ 3000
