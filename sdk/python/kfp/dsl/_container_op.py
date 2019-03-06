@@ -49,7 +49,9 @@ class Container(object):
 
     self.argument_inputs = [_pipeline_param.PipelineParam(x[1], x[0], x[2])
                             for x in list(set(matches))]
-
+    self.inputs = []
+    if self.argument_inputs:
+      self.inputs += self.argument_inputs
 
   def _validate_memory_string(self, memory_string):
     """Validate a given string is valid for memory request or limit."""
@@ -216,10 +218,11 @@ class ContainerOp(Container):
 
     # human_name must exist to construct containerOps name
     self.human_name = name
-    super().__init__(_pipeline.Pipeline.get_default_pipeline().add_op(self, is_exit_handler), image)
+    super().__init__(_pipeline.Pipeline.get_default_pipeline().add_op(self, is_exit_handler), 
+                     image,
+                     command,
+                     arguments)
 
-    self.command = command
-    self.arguments = arguments
     self.is_exit_handler = is_exit_handler
     self.node_selector = {}
     self.volumes = []
@@ -228,19 +231,9 @@ class ContainerOp(Container):
     self.num_retries = 0
     self.sidecars = []
 
-    matches = []
-    for arg in (command or []) + (arguments or []):
-      match = re.findall(r'{{pipelineparam:op=([\w\s_-]*);name=([\w\s_-]+);value=(.*?)}}', str(arg))
-      matches += match
-
-    self.argument_inputs = [_pipeline_param.PipelineParam(x[1], x[0], x[2])
-                            for x in list(set(matches))]
     self.file_outputs = file_outputs
+    
     self.dependent_op_names = []
-
-    self.inputs = []
-    if self.argument_inputs:
-      self.inputs += self.argument_inputs
 
     self.outputs = {}
     if file_outputs:

@@ -19,6 +19,10 @@ import time
 import logging
 import re
 
+from .. import dsl
+
+
+
 class K8sHelper(object):
   """ Kubernetes Helper """
 
@@ -159,6 +163,8 @@ class K8sHelper(object):
                    for sub_obj in obj)
     elif isinstance(k8s_obj, (datetime, date)):
       return k8s_obj.isoformat()
+    elif isinstance(k8s_obj, dsl.PipelineParam):
+      return '{{workflow.parameters.%s}}' % k8s_obj.name
 
     if isinstance(k8s_obj, dict):
       obj_dict = k8s_obj
@@ -174,3 +180,8 @@ class K8sHelper(object):
 
     return {key: K8sHelper.convert_k8s_obj_to_json(val)
             for key, val in iteritems(obj_dict)}
+
+  @staticmethod
+  def convert_pipeline_param_to_value(item, key="value"):
+    """ Get actual value if item is a PipelineParam """
+    return getattr(item, key) if isinstance(item, dsl.PipelineParam) else item

@@ -294,7 +294,7 @@ class Compiler(object):
     for param in op.outputs.values():
       output_parameters.append({
         'name': self._pipelineparam_full_name(param),
-        'valueFrom': {'path': op.file_outputs[param.name]}
+        'valueFrom': {'path': K8sHelper.convert_pipeline_param_to_value(op.file_outputs[param.name], "name") }
       })
     output_parameters.sort(key=lambda x: x['name'])
 
