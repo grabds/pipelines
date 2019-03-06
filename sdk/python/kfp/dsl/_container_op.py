@@ -15,19 +15,23 @@
 
 from . import _pipeline
 from . import _pipeline_param
-from ._pipeline_param import _extract_pipelineparams
 import re
 from typing import Dict
 
 
-class ContainerBase(object):
-  """Represents a container template in a pod"""
+class Container(object):
+  """Represents a container or sidecar spec in argo"""
 
-  def __init__(self, name: str, image: str):
+  def __init__(self, name: str, image: str, command: str=None, arguments: str=None):
     """
     Args:
       name: the name of the container specified as a DNS_LABEL.
       image: the sidecar container image name, such as 'rabbitmq:latest'.
+      command: the command to run in the container.
+               If None, uses default CMD in defined in container.
+      arguments: the arguments of the command. The command can include "%s" and supply
+                 a PipelineParam as the string replacement. For example, ('echo %s' % input_param).
+                 At container run time the argument will be 'echo param_value'.
     """
     self.name = name
     self.image = image
@@ -35,6 +39,17 @@ class ContainerBase(object):
     self.resource_requests = {}
     self.volume_mounts = []
     self.env_variables = []
+    self.command = command
+    self.arguments = arguments
+
+    matches = []
+    for arg in (command or []) + (arguments or []):
+      match = re.findall(r'{{pipelineparam:op=([\w\s_-]*);name=([\w\s_-]+);value=(.*?)}}', str(arg))
+      matches += match
+
+    self.argument_inputs = [_pipeline_param.PipelineParam(x[1], x[0], x[2])
+                            for x in list(set(matches))]
+
 
   def _validate_memory_string(self, memory_string):
     """Validate a given string is valid for memory request or limit."""
@@ -171,35 +186,7 @@ class ContainerBase(object):
     return self
 
 
-class SideCar(ContainerBase):
-  """Represents a sidecar container to be provisioned together with a docker container image for ContainerOp."""
-
-  def __init__(self, name: str, image: str, command: str=None, arguments: str=None):
-    """
-    Args:
-      name: the name of the sidecar.
-      image: the sidecar container image name, such as 'rabbitmq:latest'
-      command: the command to run in the container.
-          If None, uses default CMD in defined in container.
-      arguments: the arguments of the command. The command can include "%s" and supply
-          a PipelineParam as the string replacement. For example, ('echo %s' % input_param).
-          At container run time the argument will be 'echo param_value'.
-    """
-    # name will be generated when attached to ContainerOps
-    super().__init__(name, image)
-    self.command = command
-    self.arguments = arguments
-
-    matches = []
-    for arg in (command or []) + (arguments or []):
-      match = re.findall(r'{{pipelineparam:op=([\w\s_-]*);name=([\w\s_-]+);value=(.*?)}}', str(arg))
-      matches += match
-
-    self.argument_inputs = [_pipeline_param.PipelineParam(x[1], x[0], x[2])
-                            for x in list(set(matches))]
-
-
-class ContainerOp(ContainerBase):
+class ContainerOp(Container):
   """Represents an op implemented by a docker container image."""
 
   def __init__(self, name: str, image: str, command: str=None, arguments: str=None,
@@ -341,11 +328,11 @@ class ContainerOp(ContainerBase):
     self.num_retries = num_retries
     return self
 
-  def add_sidecar(self, sidecar: SideCar):
+  def add_sidecar(self, sidecar: Container):
     """Add a sidecar to the ContainerOps. 
 
     Args:
-      sidecar: SideCar object.
+      sidecar: Container object.
     """
     self.sidecars.append(sidecar)
 
