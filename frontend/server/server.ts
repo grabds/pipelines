@@ -164,18 +164,23 @@ const artifactsHandler = async (req, res) => {
           res.status(500).send(`Failed to get object in bucket ${bucket} at path ${key}: ${err}`);
           return;
         }
+        // tarball
+        if (key.match(/(tgz|tar|gz)$/gi)) {
+          
+          try {
+            let contents = '';
+            stream.pipe(new tar.Parse()).on('entry', (entry: Stream) => {
+              entry.on('data', (buffer) => contents += buffer.toString());
+            });
 
-        try {
-          let contents = '';
-          stream.pipe(new tar.Parse()).on('entry', (entry: Stream) => {
-            entry.on('data', (buffer) => contents += buffer.toString());
-          });
-
-          stream.on('end', () => {
-            res.send(contents);
-          });
-        } catch (err) {
-          res.status(500).send(`Failed to get object in bucket ${bucket} at path ${key}: ${err}`);
+            stream.on('end', () => {
+              res.send(contents);
+            });
+          } catch (err) {
+            res.status(500).send(`Failed to get object in bucket ${bucket} at path ${key}: ${err}`);
+          }
+        } else {
+          stream.pipe(res);
         }
       });
       break;
