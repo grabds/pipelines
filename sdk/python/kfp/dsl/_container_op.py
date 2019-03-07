@@ -218,7 +218,8 @@ class ContainerOp(Container):
 
     # human_name must exist to construct containerOps name
     self.human_name = name
-    super().__init__(_pipeline.Pipeline.get_default_pipeline().add_op(self, is_exit_handler), 
+    op_name = _pipeline.Pipeline.get_default_pipeline().add_op(self, is_exit_handler)
+    super().__init__(op_name, 
                      image,
                      command,
                      arguments)
