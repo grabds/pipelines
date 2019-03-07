@@ -164,7 +164,7 @@ class K8sHelper(object):
     elif isinstance(k8s_obj, (datetime, date)):
       return k8s_obj.isoformat()
     elif isinstance(k8s_obj, dsl.PipelineParam):
-      return '{{workflow.parameters.%s}}' % k8s_obj.name
+      return '{{workflow.parameters.%s}}%s' % (k8s_obj.name, k8s_obj.suffix)
 
     if isinstance(k8s_obj, dict):
       obj_dict = k8s_obj

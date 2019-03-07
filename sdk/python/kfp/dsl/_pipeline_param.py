@@ -54,6 +54,7 @@ class PipelineParam(object):
     self.op_name = op_name
     self.name = name
     self.value = value
+    self.suffix = ""
 
   def __str__(self):
     """String representation.
@@ -94,6 +95,12 @@ class PipelineParam(object):
   def __ge__(self, other):
     return ConditionOperator('>=', self, other)
 
+  def __add__(self, other):
+    if isinstance(other, str):
+      self.suffix = self.suffix + other
+      return self
+
   def __hash__(self):
     return hash((self.op_name, self.name))
 
+    

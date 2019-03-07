@@ -329,6 +329,7 @@ class ContainerOp(Container):
       sidecar: Container object.
     """
     self.sidecars.append(sidecar)
+    return self
 
   def __repr__(self):
       return str({self.__class__.__name__: self.__dict__})
